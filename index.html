@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trade Discipline</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trade Discipline">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+  :root{
+    --bg: #0d1210;
+    --panel: #141b18;
+    --panel-2: #182019;
+    --line: #26332c;
+    --ink: #e8ede9;
+    --ink-dim: #8fa199;
+    --signal: #4fb286;
+    --signal-dim: #2c4438;
+    --risk: #c97a4a;
+    --risk-dim: #4a3324;
+    --mono: "SF Mono", "JetBrains Mono", "Menlo", "Consolas", monospace;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #16201b 0%, transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family: var(--serif);
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:60px;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:28px 18px 10px;}
+  header{margin-bottom:22px;}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--signal);margin-bottom:6px;}
+  h1{font-size:28px;margin:0 0 4px;font-weight:600;letter-spacing:-0.01em;}
+  .sub{color:var(--ink-dim);font-size:14px;font-family:var(--mono);}
+  nav{display:flex;gap:6px;margin:22px 0 18px;border-bottom:1px solid var(--line);}
+  .tab{font-family:var(--mono);font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-dim);padding:10px 4px;cursor:pointer;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;margin-right:18px;}
+  .tab.active{color:var(--ink);border-bottom-color:var(--signal);}
+  section{display:none;}
+  section.active{display:block;}
+  .block{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:14px;}
+  .block h2{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);margin:0 0 12px;display:flex;justify-content:space-between;align-items:baseline;}
+  .block h2 span.count{color:var(--signal);}
+  .item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:15px;line-height:1.4;}
+  .item:last-child{border-bottom:none;}
+  .item input[type=checkbox]{appearance:none;width:19px;height:19px;min-width:19px;border:1.5px solid var(--ink-dim);border-radius:5px;margin-top:2px;cursor:pointer;position:relative;background:transparent;}
+  .item input[type=checkbox]:checked{background:var(--signal);border-color:var(--signal);}
+  .item input[type=checkbox]:checked::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid #0d1210;border-width:0 2px 2px 0;transform:rotate(45deg);}
+  .item label{cursor:pointer;}
+  .item.done label{color:var(--ink-dim);text-decoration:line-through;text-decoration-color:var(--line);}
+  .item .note{display:block;font-size:12px;color:var(--ink-dim);margin-top:2px;font-family:var(--mono);}
+  .reset-row{display:flex;justify-content:flex-end;margin-top:2px;}
+  .ghost-btn{background:none;border:1px solid var(--line);color:var(--ink-dim);font-family:var(--mono);font-size:11px;letter-spacing:.05em;padding:6px 12px;border-radius:6px;cursor:pointer;}
+  .ghost-btn:hover{border-color:var(--signal);color:var(--signal);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .field{margin-bottom:10px;}
+  .field label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:5px;}
+  .field input, .field select, .field textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:7px;padding:9px 10px;font-family:var(--serif);font-size:14px;}
+  .field textarea{resize:vertical;min-height:50px;}
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none;border-color:var(--signal);}
+  .radio-row{display:flex;gap:10px;}
+  .radio-opt{flex:1;text-align:center;font-family:var(--mono);font-size:12px;padding:9px 0;border:1px solid var(--line);border-radius:7px;cursor:pointer;color:var(--ink-dim);}
+  .radio-opt.selected-yes{border-color:var(--risk);color:var(--risk);background:var(--risk-dim);}
+  .radio-opt.selected-no{border-color:var(--signal);color:var(--signal);background:var(--signal-dim);}
+  .save-btn{width:100%;background:var(--signal);color:#0d1210;border:none;font-family:var(--mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;padding:13px;border-radius:8px;cursor:pointer;margin-top:6px;}
+  .save-btn:active{opacity:0.85;}
+  .stat-row{display:flex;gap:10px;margin-bottom:14px;}
+  .stat{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 12px;text-align:center;}
+  .stat .num{font-family:var(--mono);font-size:22px;color:var(--signal);}
+  .stat .num.warn{color:var(--risk);}
+  .stat .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);margin-top:4px;}
+  .entry{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:10px;}
+  .entry-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .entry-pair{font-family:var(--mono);font-size:14px;font-weight:600;}
+  .entry-date{font-family:var(--mono);font-size:11px;color:var(--ink-dim);}
+  .entry-meta{font-size:13px;color:var(--ink-dim);line-height:1.5;}
+  .badge{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:99px;letter-spacing:.04em;text-transform:uppercase;}
+  .badge.held{background:var(--signal-dim);color:var(--signal);}
+  .badge.deviated{background:var(--risk-dim);color:var(--risk);}
+  .entry-note{font-size:13px;color:var(--ink-dim);margin-top:6px;font-style:italic;}
+  .empty{text-align:center;color:var(--ink-dim);font-family:var(--mono);font-size:13px;padding:40px 10px;}
+  .del{background:none;border:none;color:var(--ink-dim);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;}
+  .del:hover{color:var(--risk);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Risk Discipline — BTCUSD & FX</div>
+    <h1>Trade Discipline</h1>
+    <div class="sub">Size it. Set it. Leave it alone.</div>
+  </header>
+  <nav>
+    <button class="tab active" data-tab="checklist">Checklist</button>
+    <button class="tab" data-tab="journal">Log Trade</button>
+    <button class="tab" data-tab="history">History</button>
+  </nav>
+  <section id="checklist" class="active">
+    <div class="block">
+      <h2>Before entering <span class="count" id="count-pre">0/4</span></h2>
+      <div class="item" data-list="pre" data-id="p1"><input type="checkbox" id="p1"><label for="p1">SL placed on a validated structural point</label></div>
+      <div class="item" data-list="pre" data-id="p2"><input type="checkbox" id="p2"><label for="p2">Lot size calculated in FX Crypto Calculator — not guessed<span class="note">balance × risk % ÷ SL distance</span></label></div>
+      <div class="item" data-list="pre" data-id="p3"><input type="checkbox" id="p3"><label for="p3">Entry, SL, and TP all set together before confirming</label></div>
+      <div class="item" data-list="pre" data-id="p4"><input type="checkbox" id="p4"><label for="p4">Sized off my rule, not off how confident I feel</label></div>
+    </div>
+    <div class="block">
+      <h2>After entering <span class="count" id="count-in">0/3</span></h2>
+      <div class="item" data-list="in" data-id="i1"><input type="checkbox" id="i1"><label for="i1">Trade app muted / phone put away for a set block</label></div>
+      <div class="item" data-list="in" data-id="i2"><input type="checkbox" id="i2"><label for="i2">If I check and see a pullback: the SL is already there for this — it doesn't need me watching</label></div>
+      <div class="item" data-list="in" data-id="i3"><input type="checkbox" id="i3"><label for="i3">Only SL or TP closes this trade — no manual exit on emotion</label></div>
+    </div>
+    <div class="block">
+      <h2>After it closes <span class="count" id="count-post">0/2</span></h2>
+      <div class="item" data-list="post" data-id="o1"><input type="checkbox" id="o1"><label for="o1">Logged the trade in the journal tab</label></div>
+      <div class="item" data-list="post" data-id="o2"><input type="checkbox" id="o2"><label for="o2">If I deviated, wrote one line on what I felt in that moment</label></div>
+    </div>
+    <div class="reset-row"><button class="ghost-btn" id="resetChecklist">Reset for next trade</button></div>
+  </section>
+  <section id="journal">
+    <div class="block">
+      <h2>New entry</h2>
+      <div class="field"><label>Instrument</label><input type="text" id="f-pair" placeholder="e.g. BTCUSD, XAUUSD, EURUSD"></div>
+      <div class="grid2">
+        <div class="field"><label>Risk %</label><input type="number" step="0.1" id="f-risk" placeholder="1.0"></div>
+        <div class="field"><label>Planned lot size</label><input type="number" step="0.01" id="f-planned" placeholder="0.05"></div>
+      </div>
+      <div class="field"><label>Actual lot size used</label><input type="number" step="0.01" id="f-actual" placeholder="0.05"></div>
+      <div class="field">
+        <label>Outcome</label>
+        <select id="f-outcome">
+          <option value="hit-tp">Hit TP</option>
+          <option value="hit-sl">Hit SL</option>
+          <option value="closed-early-profit">Closed early — in profit</option>
+          <option value="closed-early-loss">Closed early — in loss</option>
+          <option value="open">Still open</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Did I deviate from the plan?</label>
+        <div class="radio-row">
+          <div class="radio-opt" id="dev-yes" onclick="setDeviation(true)">Yes</div>
+          <div class="radio-opt" id="dev-no" onclick="setDeviation(false)">No</div>
+        </div>
+      </div>
+      <div class="field"><label>What happened / what I felt</label><textarea id="f-note" placeholder="One or two lines — be honest, this is for you."></textarea></div>
+      <button class="save-btn" id="saveEntry">Save entry</button>
+    </div>
+  </section>
+  <section id="history">
+    <div class="stat-row">
+      <div class="stat"><div class="num" id="stat-total">0</div><div class="lbl">Trades logged</div></div>
+      <div class="stat"><div class="num" id="stat-held">0%</div><div class="lbl">Plan held</div></div>
+      <div class="stat"><div class="num warn" id="stat-dev">0</div><div class="lbl">Deviations</div></div>
+    </div>
+    <div id="entries"></div>
+  </section>
+</div>
+<script>
+window.storage = {
+  async get(key){
+    const raw = localStorage.getItem(key);
+    if(raw === null) return null;
+    return {key, value: raw};
+  },
+  async set(key, value){
+    localStorage.setItem(key, value);
+    return {key, value};
+  },
+  async delete(key){
+    localStorage.removeItem(key);
+    return {key, deleted: true};
+  },
+  async list(prefix){
+    const keys = [];
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      if(!prefix || k.startsWith(prefix)) keys.push(k);
+    }
+    return {keys};
+  }
+};
+const CHECK_IDS = ['p1','p2','p3','p4','i1','i2','i3','o1','o2'];
+let deviationValue = null;
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+    if(tab.dataset.tab==='history') renderHistory();
+  });
+});
+async function loadChecklist(){
+  try{
+    const res = await window.storage.get('checklist-state');
+    const state = res ? JSON.parse(res.value) : {};
+    CHECK_IDS.forEach(id=>{
+      const el = document.getElementById(id);
+      el.checked = !!state[id];
+      updateItemStyle(el);
+    });
+    updateCounts();
+  }catch(e){
+    CHECK_IDS.forEach(id=>updateItemStyle(document.getElementById(id)));
+    updateCounts();
+  }
+}
+async function saveChecklist(){
+  const state = {};
+  CHECK_IDS.forEach(id=> state[id] = document.getElementById(id).checked);
+  try{ await window.storage.set('checklist-state', JSON.stringify(state)); }catch(e){}
+}
+function updateItemStyle(el){
+  const item = el.closest('.item');
+  if(el.checked) item.classList.add('done'); else item.classList.remove('done');
+}
+function updateCounts(){
+  const groups = {pre:['p1','p2','p3','p4'], in:['i1','i2','i3'], post:['o1','o2']};
+  for(const [key, ids] of Object.entries(groups)){
+    const done = ids.filter(id=>document.getElementById(id).checked).length;
+    document.getElementById('count-'+key).textContent = `${done}/${ids.length}`;
+  }
+}
+CHECK_IDS.forEach(id=>{
+  document.getElementById(id).addEventListener('change', (e)=>{
+    updateItemStyle(e.target);
+    updateCounts();
+    saveChecklist();
+  });
+});
+document.getElementById('resetChecklist').addEventListener('click', async ()=>{
+  CHECK_IDS.forEach(id=>{
+    const el = document.getElementById(id);
+    el.checked = false;
+    updateItemStyle(el);
+  });
+  updateCounts();
+  await saveChecklist();
+});
+function setDeviation(val){
+  deviationValue = val;
+  document.getElementById('dev-yes').classList.toggle('selected-yes', val===true);
+  document.getElementById('dev-no').classList.toggle('selected-no', val===false);
+}
+document.getElementById('saveEntry').addEventListener('click', async ()=>{
+  const pair = document.getElementById('f-pair').value.trim();
+  if(!pair){ alert('Add the instrument first.'); return; }
+  if(deviationValue===null){ alert('Mark whether you deviated from the plan.'); return; }
+  const entry = {
+    id: 'trade_' + Date.now(),
+    pair,
+    risk: document.getElementById('f-risk').value,
+    planned: document.getElementById('f-planned').value,
+    actual: document.getElementById('f-actual').value,
+    outcome: document.getElementById('f-outcome').value,
+    deviated: deviationValue,
+    note: document.getElementById('f-note').value.trim(),
+    date: new Date().toISOString()
+  };
+  try{
+    const btn = document.getElementById('saveEntry');
+    btn.textContent = 'Saving…';
+    await window.storage.set(entry.id, JSON.stringify(entry));
+    btn.textContent = 'Saved ✓';
+    setTimeout(()=> btn.textContent = 'Save entry', 1200);
+    document.getElementById('f-pair').value='';
+    document.getElementById('f-risk').value='';
+    document.getElementById('f-planned').value='';
+    document.getElementById('f-actual').value='';
+    document.getElementById('f-note').value='';
+    deviationValue = null;
+    document.getElementById('dev-yes').classList.remove('selected-yes');
+    document.getElementById('dev-no').classList.remove('selected-no');
+  }catch(e){
+    alert('Could not save — try again.');
+  }
+});
+async function renderHistory(){
+  const container = document.getElementById('entries');
+  container.innerHTML = '<div class="empty">Loading…</div>';
+  let keys = [];
+  try{
+    const res = await window.storage.list('trade_');
+    keys = res ? res.keys : [];
+  }catch(e){ keys = []; }
+  if(!keys.length){
+    container.innerHTML = '<div class="empty">No trades logged yet.<br>Log your BTCUSD trade from today to start.</div>';
+    document.getElementById('stat-total').textContent = '0';
+    document.getElementById('stat-held').textContent = '0%';
+    document.getElementById('stat-dev').textContent = '0';
+    return;
+  }
+  const entries = [];
+  for(const k of keys){
+    try{
+      const r = await window.storage.get(k);
+      if(r) entries.push(JSON.parse(r.value));
+    }catch(e){}
+  }
+  entries.sort((a,b)=> new Date(b.date) - new Date(a.date));
+  const total = entries.length;
+  const devCount = entries.filter(e=>e.deviated).length;
+  const heldPct = total ? Math.round(((total-devCount)/total)*100) : 0;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-held').textContent = heldPct + '%';
+  document.getElementById('stat-dev').textContent = devCount;
+  container.innerHTML = '';
+  entries.forEach(e=>{
+    const div = document.createElement('div');
+    div.className = 'entry';
+    const d = new Date(e.date);
+    const dateStr = d.toLocaleDateString(undefined, {month:'short', day:'numeric'});
+    div.innerHTML = `
+      <div class="entry-top">
+        <span class="entry-pair">${escapeHtml(e.pair)}</span>
+        <span class="entry-date">${dateStr}</span>
+      </div>
+      <div class="entry-meta">
+        Risk ${e.risk||'—'}% · Planned ${e.planned||'—'} lot · Actual ${e.actual||'—'} lot · ${outcomeLabel(e.outcome)}
+        <span class="badge ${e.deviated?'deviated':'held'}">${e.deviated?'Deviated':'Held plan'}</span>
+      </div>
+      ${e.note ? `<div class="entry-note">"${escapeHtml(e.note)}"</div>` : ''}
+      <div style="text-align:right;margin-top:4px;">
+        <button class="del" data-id="${e.id}">✕</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+  container.querySelectorAll('.del').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      try{
+        await window.storage.delete(btn.dataset.id);
+        renderHistory();
+      }catch(e){}
+    });
+  });
+}
+function outcomeLabel(o){
+  const map = {'hit-tp':'Hit TP','hit-sl':'Hit SL','closed-early-profit':'Closed early (profit)','closed-early-loss':'Closed early (loss)','open':'Still open'};
+  return map[o] || o;
+}
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+loadChecklist();
+</script>
+</body>
+</html>
+
